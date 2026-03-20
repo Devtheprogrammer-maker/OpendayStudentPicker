@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Open Day Student Selection</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+        .student-list { display: grid; gap: 10px; }
+        .student-card { background: white; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        button { background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        button:disabled { background: #ccc; }
+    </style>
+</head>
+<body>
+    <h2>Student Selection for Open Day</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Student Name</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="student-table-body">
+            </tbody>
+    </table>
+
+   <script type="module" src="./src/FirebaseConfig.js"></script>
+</body>
+</html>
