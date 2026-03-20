@@ -22,10 +22,14 @@ const analytics = getAnalytics(app);
 
 // 4. Live Listener: Rebuilds the table automatically when data changes
 const studentsRef = ref(db, '/');
+
+let allStudents = {}; // Global variable to store the data
+
+
 onValue(studentsRef, (snapshot) => {
-  const data = snapshot.val();
-  if (data) {
-    updateYourUITable(data);
+  allStudents = snapshot.val();
+  if (allStudents) {
+    updateYourUITable(allStudents);
   } else {
     console.log("Database is empty. Add some students in the Firebase console!");
   }
@@ -106,3 +110,22 @@ window.handleClaim = function(id) {
     claimStudent(id, teacherName);
   }
 };
+
+// Search Functionality
+document.getElementById('studentSearch').addEventListener('input', (e) => {
+  const searchTerm = e.target.value.toLowerCase();
+  const filteredData = {};
+
+  for (let id in allStudents) {
+    const s = allStudents[id];
+    const fullName = `${s["First Name"]} ${s["Last Name"]}`.toLowerCase();
+    const className = (s["Class"] || "").toLowerCase();
+
+    // Check if search matches name OR class
+    if (fullName.includes(searchTerm) || className.includes(searchTerm)) {
+      filteredData[id] = s;
+    }
+  }
+  
+  updateYourUITable(filteredData);
+});
