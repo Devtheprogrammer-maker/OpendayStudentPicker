@@ -1,9 +1,6 @@
-// 1. Corrected Imports from CDN
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-import { getDatabase, ref, get, child, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getDatabase, ref, update, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-// 2. Your Firebase configuration (Hardcoded for today's deadline)
 const firebaseConfig = {
   apiKey: "AIzaSyA-HubEYcFzDOGg3m4E2rJi00xjhNxf7Hg",
   authDomain: "openday-ea15c.firebaseapp.com",
@@ -11,121 +8,221 @@ const firebaseConfig = {
   projectId: "openday-ea15c",
   storageBucket: "openday-ea15c.firebasestorage.app",
   messagingSenderId: "777502812780",
-  appId: "1:777502812780:web:8c4d1972ae97ad89680649",
-  measurementId: "G-L9B0FF31X9"
+  appId: "1:777502812780:web:8c4d1972ae97ad89680649"
 };
 
-// 3. Initialize Services
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const analytics = getAnalytics(app);
 
-// 4. Live Listener: Rebuilds the table automatically when data changes
+// The master list of Category Names
+const areaNames = [
+  "Religion", "Spanish", "Tourism", "Integrated Science", "Biology", "Chemistry",
+  "Agri - Tilapia", "Agri - Piggery", "Agri - Vegetable", "Agri - Cattle Ranch",
+  "Agri - Layers", "Agri - Broilers", "Agri - Green house", "Agri - Implements",
+  "IT", "Belizean/Social Studies", "General Business", "English", "Literature",
+  "Math", "PE", "Tokens/Helpers", "Tour Guides", "Planning Committee", "Peer Helpers", "Sales"
+];
+
 const studentsRef = ref(db, '/');
+let masterStudentList = [];
+let currentlyClaimedNames = [];
 
-let allStudents = {}; // Global variable to store the data
+onValue(ref(db, '/'), (snapshot) => {
+  const data = snapshot.val();
+  // Filter out the 'activities' node so we only have the student array
+  masterStudentList = Object.values(data).filter(item => item["First Name"]);
 
-
-onValue(studentsRef, (snapshot) => {
-  allStudents = snapshot.val();
-  if (allStudents) {
-    updateYourUITable(allStudents);
-  } else {
-    console.log("Database is empty. Add some students in the Firebase console!");
+  // Also get the activities to see who is already taken
+  if (data.activities) {
+    calculateRemaining(data.activities);
+    renderAreas(data.activities);
   }
 });
 
-// 5. Function to update the HTML Table
-function updateYourUITable(data) {
-  const tableBody = document.getElementById('student-table-body');
-  if (!tableBody) return;
-  
-  tableBody.innerHTML = ""; 
+// 3. Logic to see who is left
+function calculateRemaining(activities) {
+  currentlyClaimedNames = [];
 
-  for (let id in data) {
-    const student = data[id];
-    
-    // 1. Combine First and Last Name since your JSON uses those keys
-    // We also pull the Class for better identification
-    const firstName = student["First Name"] || "";
-    const lastName = student["Last Name"] || "";
-    const studentClass = student["Class"] || "N/A";
-    const fullName = `${firstName} ${lastName}`.trim();
+  // Flatten all names currently in activity slots
+  Object.values(activities).forEach(area => {
+    Object.keys(area).forEach(key => {
+      if (key !== "slotCount") {
+        currentlyClaimedNames.push(area[key].toLowerCase().trim());
+      }
+    });
+  });
 
-    // 2. Handle the display name logic
-    const displayName = fullName || "Unknown Student";
-    const isClaimed = student.is_claimed || false;
-    const assignedTo = student.assigned_to || "";
+  const remainingContainer = document.getElementById('remaining-students');
+  if (!remainingContainer) return;
 
-    const buttonDisabled = isClaimed ? "disabled" : "";
-    const statusText = isClaimed ? `Claimed by ${assignedTo}` : "Available";
+  // Filter master list against claimed names
+  const left = masterStudentList.filter(s => {
+    const fullName = `${s["First Name"]} ${s["Last Name"]}`.toLowerCase().trim();
+    return !currentlyClaimedNames.includes(fullName);
+  });
 
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td><strong>[${studentClass}]</strong> ${displayName}</td>
-      <td>${statusText}</td>
-      <td>
-        <button onclick="handleClaim('${id}')" ${buttonDisabled}>
-          ${isClaimed ? 'Taken' : 'Claim Student'}
-        </button>
-      </td>
-    `;
-    tableBody.appendChild(row);
-  }
+  remainingContainer.innerHTML = `<h3>Students Left (${left.length})</h3>`;
+  const list = document.createElement('div');
+  list.className = 'remaining-list';
+
+  left.forEach(s => {
+    list.innerHTML += `<span>[${s.Class}] ${s["First Name"]} ${s["Last Name"]}</span>`;
+  });
+  remainingContainer.appendChild(list);
 }
 
-// 6. Action Function: Handles the actual claiming process
-async function claimStudent(studentId, teacherName) {
-  // Use the same path as your onValue listener (root or 'students')
-  // If your students are at the root, use `ref(db, `/${studentId}`)`
-  const studentRef = ref(db, `/${studentId}`); 
-  
-  try {
-    const snapshot = await get(studentRef);
-    const student = snapshot.val();
+onValue(ref(db, 'activities'), (snapshot) => {
+  const data = snapshot.val() || {};
+  renderAreas(data);
+});
 
-    console.log("Checking student data:", student); // Debug: See what Firebase sees
+function renderAreas(data) {
+  const container = document.getElementById('activity-container');
+  if (!container) return;
+  container.innerHTML = "";
 
-    // We check if student exists AND if is_claimed is specifically NOT true
-    if (student && student.is_claimed !== true) {
-      await update(studentRef, {
-        is_claimed: true,
-        assigned_to: teacherName
-      });
-      alert(`Success! ${student["First Name"]} is now claimed by ${teacherName}.`);
-    } else {
-      console.log("Claim failed. Student data:", student);
-      alert("Too late! This student is already taken.");
+  areaNames.forEach(name => {
+    const areaData = data[name] || {};
+    const slotCount = areaData.slotCount || 1;
+    const teacher = areaData.teacherInCharge || "None assigned";
+
+    const card = document.createElement('div');
+    card.className = 'area-card';
+
+    let slotsHtml = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 style="margin:0;">${name}</h3>
+                <div style="font-size: 0.9em; color: #666; margin: 5px 0; cursor: pointer;" onclick="updateTeacher('${name}')">
+                    <strong>Teacher:</strong> <span style="color: #007bff; text-decoration: underline;">${teacher}</span>
+                </div>
+                <div style="display:flex; gap: 5px; margin-top: 5px;">
+                    <button class="btn-add" onclick="addSlot('${name}', ${slotCount})">+ Slot</button>
+                    <button class="btn-remove" onclick="removeSlot('${name}', ${slotCount})">- Slot</button>
+                </div>
+            </div>
+        `;
+
+    for (let i = 1; i <= slotCount; i++) {
+      const claim = areaData[i] || null;
+      slotsHtml += `
+                <div class="slot-row">
+                    <span class="slot-num">#${i}</span>
+                    ${claim
+          ? `<div class="claimed-container">
+                             <span class="claimed">${claim}</span>
+                             <button onclick="clearSlot('${name}', ${i})" class="btn-clear">×</button>
+                           </div>`
+          : `<span class="available" onclick="claimSlot('${name}', ${i})">Assign Student</span>`
+        }
+                </div>`;
     }
-  } catch (error) {
-    console.error("Update failed:", error);
-    alert("Error claiming student. Check your Firebase rules!");
-  }
+    card.innerHTML = slotsHtml;
+    container.appendChild(card);
+  });
 }
 
-// 7. Global Bridge: Allows HTML buttons to trigger the claim
-window.handleClaim = function(id) {
-  const teacherName = prompt("Please enter your name:");
-  if (teacherName && teacherName.trim() !== "") {
-    claimStudent(id, teacherName);
+// Function to add a new slot to a specific area
+window.addSlot = async function (name, currentCount) {
+  const newCount = currentCount + 1;
+  await update(ref(db, `activities/${name}`), {
+    slotCount: newCount
+  });
+};
+
+window.claimSlot = async function (areaName, slotId) {
+  window.claimSlot = async function (areaName, slotId) {
+    const nameInput = prompt(`Enter Student Name for ${areaName} Slot ${slotId}:`);
+    if (!nameInput) return;
+
+    const cleanName = nameInput.trim();
+    const lowerName = cleanName.toLowerCase();
+
+    // VALIDATION: Check if already in this or any other area
+    if (currentlyClaimedNames.includes(lowerName)) {
+      alert(`ERROR: ${cleanName} is already assigned to an activity!`);
+      return;
+    }
+
+    // VALIDATION: Check if name actually exists in the school list
+    const exists = masterStudentList.some(s =>
+      `${s["First Name"]} ${s["Last Name"]}`.toLowerCase().trim() === lowerName
+    );
+
+    if (!exists) {
+      if (!confirm(`Warning: "${cleanName}" was not found in the official student list. Assign anyway?`)) {
+        return;
+      }
+    }
+
+    await update(ref(db, `activities/${areaName}`), {
+      [slotId]: cleanName
+    });
+  };
+};
+
+// Function to decrease the slot count and clean up the data
+window.removeSlot = async function (name, currentCount) {
+  if (currentCount <= 1) {
+    alert("You must have at least one slot!");
+    return;
+  }
+
+  if (confirm(`Are you sure you want to remove Slot #${currentCount} from ${name}?`)) {
+    const newCount = currentCount - 1;
+    const updates = {};
+
+    // Update the count
+    updates[`activities/${name}/slotCount`] = newCount;
+
+    // Remove the data in the last slot (so it's empty if re-added)
+    updates[`activities/${name}/${currentCount}`] = null;
+
+    try {
+      await update(ref(db), updates);
+    } catch (err) {
+      console.error("Remove failed:", err);
+    }
   }
 };
 
-// Search Functionality
-document.getElementById('studentSearch').addEventListener('input', (e) => {
-  const searchTerm = e.target.value.toLowerCase();
-  const filteredData = {};
-
-  for (let id in allStudents) {
-    const s = allStudents[id];
-    const fullName = `${s["First Name"]} ${s["Last Name"]}`.toLowerCase();
-    const className = (s["Class"] || "").toLowerCase();
-
-    // Check if search matches name OR class
-    if (fullName.includes(searchTerm) || className.includes(searchTerm)) {
-      filteredData[id] = s;
+// Function to clear a student from a slot without deleting the slot itself
+window.clearSlot = async function (areaName, slotId) {
+  if (confirm(`Clear student from ${areaName} Slot #${slotId}?`)) {
+    try {
+      await update(ref(db, `activities/${areaName}`), {
+        [slotId]: null
+      });
+      // This will automatically trigger the onValue listener 
+      // and move the student back to the "Students Left" list.
+    } catch (err) {
+      console.error("Clear failed:", err);
     }
   }
-  
-  updateYourUITable(filteredData);
+};
+
+window.updateTeacher = async function (areaName) {
+  const teacherName = prompt(`Who is the teacher in-charge of ${areaName}?`);
+  if (teacherName !== null) { // Allows clearing by leaving blank and clicking OK
+    try {
+      await update(ref(db, `activities/${areaName}`), {
+        teacherInCharge: teacherName.trim()
+      });
+    } catch (err) {
+      console.error("Teacher update failed:", err);
+    }
+  }
+};
+
+window.printList = function () {
+  window.print();
+};
+
+// Search Filter (remains the same)
+document.getElementById('activitySearch').addEventListener('input', (e) => {
+  const term = e.target.value.toLowerCase();
+  const cards = document.querySelectorAll('.area-card');
+  cards.forEach(card => {
+    const title = card.querySelector('h3').innerText.toLowerCase();
+    card.style.display = title.includes(term) ? "block" : "none";
+  });
 });

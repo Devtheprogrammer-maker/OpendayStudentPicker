@@ -129,22 +129,164 @@
 </head>
 
 <body>
-    <h2>Student Selection for Open Day</h2>
+    <h2>Open Day Activity Selection</h2>
+    <button onclick="printList()" style="background: #6c757d; padding: 10px 20px; margin-bottom: 20px;">
+        Print Lists
+    </button>
     <div style="margin-bottom: 20px;">
-        <input type="text" id="studentSearch" placeholder="Search by name or class (e.g. 1A)..."
-            style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+        <input type="text" id="activitySearch" placeholder="Search for an area (e.g. Science)..."
+            style="width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #ccc; font-size: 16px;">
     </div>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Student Name</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody id="student-table-body">
-        </tbody>
-    </table>
+
+    <div style="display: flex; gap: 20px;">
+        <div style="flex: 3;">
+            <div id="activity-container" class="activity-grid"></div>
+        </div>
+
+        <div id="remaining-students" class="sidebar">
+            <h3>Students Left</h3>
+        </div>
+    </div>
+
+    <style>
+        .sidebar {
+            flex: 1;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            height: 80vh;
+            overflow-y: auto;
+            position: sticky;
+            top: 20px;
+        }
+
+        .remaining-list {
+            display: flex;
+            flex-direction: column;
+            font-size: 13px;
+            gap: 5px;
+        }
+
+        .remaining-list span {
+            padding: 4px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .claimed-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #e8f5e9;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .btn-clear {
+            background: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .btn-clear:hover {
+            background: #cc0000;
+        }
+
+        .btn-add {
+            background: #28a745;
+            padding: 5px 10px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-remove {
+            background: #dc3545;
+            padding: 5px 10px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+    </style>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: #f0f2f5;
+        }
+
+        .activity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .area-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-top: 5px solid #007bff;
+        }
+
+        .area-card h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .slot-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #fafafa;
+        }
+
+        .slot-num {
+            color: #888;
+            font-weight: bold;
+            width: 60px;
+        }
+
+        .claimed {
+            color: #28a745;
+            font-weight: 60 -moz-any;
+            background: #e8f5e9;
+            padding: 4px 8px;
+            border-radius: 4px;
+            flex-grow: 1;
+            text-align: right;
+        }
+
+        .available {
+            color: #007bff;
+            cursor: pointer;
+            text-decoration: underline;
+            flex-grow: 1;
+            text-align: right;
+            font-style: italic;
+        }
+
+        .available:hover {
+            color: #0056b3;
+        }
+    </style>
 
     <script type="module" src="./src/FirebaseConfig.js"></script>
 </body>
