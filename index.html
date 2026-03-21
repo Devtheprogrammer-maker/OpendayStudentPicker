@@ -140,12 +140,101 @@
 
     <div style="display: flex; gap: 20px;">
         <div style="flex: 3;">
-            <div id="activity-container" class="activity-grid"></div>
+            <div id="activity-container" class="activity-grid">
+                <div id="areas-loader" class="spinner-container" style="grid-column: 1 / -1;">
+                    <div class="loader"></div>
+                    <p>Loading activities and slots...</p>
+                </div>
+            </div>
+
+            <style>
+                /* We can reuse the same CSS from the sidebar spinner */
+                .spinner-container {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 50px;
+                    background: white;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+                }
+
+                .loader {
+                    border: 4px solid #f3f3f3;
+                    border-top: 4px solid #007bff;
+                    border-radius: 50%;
+                    width: 40px;
+                    height: 40px;
+                    animation: spin 1s linear infinite;
+                }
+
+                @keyframes spin {
+                    0% {
+                        transform: rotate(0deg);
+                    }
+
+                    100% {
+                        transform: rotate(360deg);
+                    }
+                }
+            </style>
         </div>
 
         <div id="remaining-students" class="sidebar">
+            <div id="remaining-students" class="sidebar">
+                <h3>Students Left</h3>
+                <input type="text" id="studentSidebarSearch" placeholder="Quick find student..."
+                    style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;">
+
+                <div id="loading-spinner" class="spinner-container">
+                    <div class="loader"></div>
+                    <p>Loading students...</p>
+                </div>
+                <div id="actual-student-list" class="remaining-list"></div>
+            </div>
             <h3>Students Left</h3>
+            <div id="loading-spinner" class="spinner-container">
+                <div class="loader"></div>
+                <p>Loading students...</p>
+            </div>
+            <div id="actual-student-list" class="remaining-list"></div>
         </div>
+
+        <style>
+            /* The Spinner Animation */
+            .spinner-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 40px 0;
+            }
+
+            .loader {
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #007bff;
+                border-radius: 50%;
+                width: 30px;
+                height: 30px;
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            /* Hide the actual list while loading */
+            .hidden {
+                display: none;
+            }
+        </style>
     </div>
 
     <style>

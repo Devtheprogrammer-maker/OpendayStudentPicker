@@ -47,29 +47,39 @@ function calculateRemaining(activities) {
   // Flatten all names currently in activity slots
   Object.values(activities).forEach(area => {
     Object.keys(area).forEach(key => {
-      if (key !== "slotCount") {
+      if (key !== "slotCount" && key !== "teacherInCharge" && key !== "assignedClasses") {
         currentlyClaimedNames.push(area[key].toLowerCase().trim());
       }
     });
   });
 
-  const remainingContainer = document.getElementById('remaining-students');
-  if (!remainingContainer) return;
+  const listContainer = document.getElementById('actual-student-list');
+  const spinner = document.getElementById('loading-spinner');
+  if (!listContainer || !spinner) return;
 
-  // Filter master list against claimed names
+  // Filter master list
   const left = masterStudentList.filter(s => {
     const fullName = `${s["First Name"]} ${s["Last Name"]}`.toLowerCase().trim();
     return !currentlyClaimedNames.includes(fullName);
   });
 
-  remainingContainer.innerHTML = `<h3>Students Left (${left.length})</h3>`;
-  const list = document.createElement('div');
-  list.className = 'remaining-list';
+  // --- LOADING LOGIC START ---
+  if (masterStudentList.length > 0) {
+    spinner.style.display = "none"; // Hide spinner
+    listContainer.classList.remove('hidden'); // Show list
+  }
+  // --- LOADING LOGIC END ---
+
+  listContainer.innerHTML = ""; // Clear old list
 
   left.forEach(s => {
-    list.innerHTML += `<span>[${s.Class}] ${s["First Name"]} ${s["Last Name"]}</span>`;
+    const span = document.createElement('span');
+    span.innerHTML = `<strong>[${s.Class}]</strong> ${s["First Name"]} ${s["Last Name"]}`;
+    listContainer.appendChild(span);
   });
-  remainingContainer.appendChild(list);
+
+  // Update the count in the header
+  document.querySelector('#remaining-students h3').innerText = `Students Left (${left.length})`;
 }
 
 onValue(ref(db, 'activities'), (snapshot) => {
@@ -94,7 +104,14 @@ window.updateClass = async function (areaName) {
 function renderAreas(data) {
   const container = document.getElementById('activity-container');
   if (!container) return;
+
+  // The moment this line runs, the "Loading activities..." spinner is deleted
   container.innerHTML = "";
+
+  // If there is absolutely no data yet (rare), we can show a different message
+  if (Object.keys(data).length === 0) {
+    container.innerHTML = "<p style='grid-column: 1/-1; text-align:center;'>No activities found. Please wait or refresh.</p>";
+  }
 
   areaNames.forEach(name => {
     const areaData = data[name] || {};
@@ -250,6 +267,16 @@ window.updateTeacher = async function (areaName) {
     }
   }
 };
+
+document.getElementById('studentSidebarSearch').addEventListener('input', (e) => {
+  const term = e.target.value.toLowerCase();
+  const studentSpans = document.querySelectorAll('#actual-student-list span');
+
+  studentSpans.forEach(span => {
+    const name = span.innerText.toLowerCase();
+    span.style.display = name.includes(term) ? "block" : "none";
+  });
+});
 
 window.printList = function () {
   window.print();
