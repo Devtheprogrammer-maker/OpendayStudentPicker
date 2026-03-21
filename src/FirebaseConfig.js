@@ -42,44 +42,51 @@ onValue(ref(db, '/'), (snapshot) => {
 
 // 3. Logic to see who is left
 function calculateRemaining(activities) {
-  currentlyClaimedNames = [];
-
-  // Flatten all names currently in activity slots
-  Object.values(activities).forEach(area => {
-    Object.keys(area).forEach(key => {
-      if (key !== "slotCount" && key !== "teacherInCharge" && key !== "assignedClasses") {
-        currentlyClaimedNames.push(area[key].toLowerCase().trim());
-      }
+    currentlyClaimedNames = [];
+    
+    // Loop through each Area (Religion, IT, etc.)
+    Object.values(activities).forEach(area => {
+        // Loop through each key inside that area
+        Object.keys(area).forEach(key => {
+            // SKIP the administrative keys that aren't student names
+            if (key !== "slotCount" && key !== "teacherInCharge" && key !== "assignedClasses") {
+                const studentName = area[key];
+                
+                // SAFETY CHECK: Only call toLowerCase if studentName is actually a string
+                if (typeof studentName === 'string') {
+                    currentlyClaimedNames.push(studentName.toLowerCase().trim());
+                }
+            }
+        });
     });
-  });
 
-  const listContainer = document.getElementById('actual-student-list');
-  const spinner = document.getElementById('loading-spinner');
-  if (!listContainer || !spinner) return;
+    const listContainer = document.getElementById('actual-student-list');
+    const spinner = document.getElementById('loading-spinner');
+    if (!listContainer || !spinner) return;
 
-  // Filter master list
-  const left = masterStudentList.filter(s => {
-    const fullName = `${s["First Name"]} ${s["Last Name"]}`.toLowerCase().trim();
-    return !currentlyClaimedNames.includes(fullName);
-  });
+    // Filter master list against claimed names
+    const left = masterStudentList.filter(s => {
+        const fullName = `${s["First Name"]} ${s["Last Name"]}`.toLowerCase().trim();
+        return !currentlyClaimedNames.includes(fullName);
+    });
 
-  // --- LOADING LOGIC START ---
-  if (masterStudentList.length > 0) {
-    spinner.style.display = "none"; // Hide spinner
-    listContainer.classList.remove('hidden'); // Show list
-  }
-  // --- LOADING LOGIC END ---
+    // Hide spinner once data is processed
+    if (masterStudentList.length > 0) {
+        spinner.style.display = "none";
+        listContainer.classList.remove('hidden');
+    }
 
-  listContainer.innerHTML = ""; // Clear old list
-
-  left.forEach(s => {
-    const span = document.createElement('span');
-    span.innerHTML = `<strong>[${s.Class}]</strong> ${s["First Name"]} ${s["Last Name"]}`;
-    listContainer.appendChild(span);
-  });
-
-  // Update the count in the header
-  document.querySelector('#remaining-students h3').innerText = `Students Left (${left.length})`;
+    listContainer.innerHTML = ""; 
+    
+    left.forEach(s => {
+        const span = document.createElement('span');
+        span.innerHTML = `<strong>[${s.Class}]</strong> ${s["First Name"]} ${s["Last Name"]}`;
+        listContainer.appendChild(span);
+    });
+    
+    // Update count in header
+    const countHeader = document.querySelector('#remaining-students h3');
+    if (countHeader) countHeader.innerText = `Students Left (${left.length})`;
 }
 
 onValue(ref(db, 'activities'), (snapshot) => {
