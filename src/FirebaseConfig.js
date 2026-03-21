@@ -20,7 +20,7 @@ const areaNames = [
   "Agri - Tilapia", "Agri - Piggery", "Agri - Vegetable", "Agri - Cattle Ranch",
   "Agri - Layers", "Agri - Broilers", "Agri - Green house", "Agri - Implements",
   "IT", "Belizean/Social Studies", "General Business", "English", "Literature",
-  "Math", "PE", "Tokens/Helpers", "Tour Guides", "Planning Committee", "Peer Helpers", 
+  "Math", "PE", "Tokens/Helpers", "Tour Guides", "Planning Committee", "Peer Helpers",
   "Sales (3rd Form)", "Sales (Fourth Form)", "Marching Band/Dance Group"
 ];
 
@@ -77,6 +77,20 @@ onValue(ref(db, 'activities'), (snapshot) => {
   renderAreas(data);
 });
 
+// Function to update the Classes assigned to an area
+window.updateClass = async function (areaName) {
+  const classInput = prompt(`Which class(es) will be used for ${areaName}? (e.g. 1A, 1B, 2A)`);
+  if (classInput !== null) {
+    try {
+      await update(ref(db, `activities/${areaName}`), {
+        assignedClasses: classInput.trim()
+      });
+    } catch (err) {
+      console.error("Class update failed:", err);
+    }
+  }
+};
+
 function renderAreas(data) {
   const container = document.getElementById('activity-container');
   if (!container) return;
@@ -86,20 +100,33 @@ function renderAreas(data) {
     const areaData = data[name] || {};
     const slotCount = areaData.slotCount || 1;
     const teacher = areaData.teacherInCharge || "None assigned";
+    const classes = areaData.assignedClasses || "None assigned";
+    const isAtMax = slotCount >= 6;
 
     const card = document.createElement('div');
     card.className = 'area-card';
 
     let slotsHtml = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="border-bottom: 2px solid #eee; margin-bottom: 10px; padding-bottom: 10px;">
                 <h3 style="margin:0;">${name}</h3>
-                <div style="font-size: 0.9em; color: #666; margin: 5px 0; cursor: pointer;" onclick="updateTeacher('${name}')">
-                    <strong>Teacher:</strong> <span style="color: #007bff; text-decoration: underline;">${teacher}</span>
+                
+                <div style="font-size: 0.85em; color: #555; margin-top: 8px;">
+                    <div onclick="updateTeacher('${name}')" style="cursor:pointer; margin-bottom: 4px;">
+                        <strong>Teacher:</strong> <span style="color: #007bff; text-decoration: underline;">${teacher}</span>
+                    </div>
+                    <div onclick="updateClass('${name}')" style="cursor:pointer;">
+                        <strong>Classes:</strong> <span style="color: #007bff; text-decoration: underline;">${classes}</span>
+                    </div>
                 </div>
-                <div style="display:flex; gap: 5px; margin-top: 5px;">
-                    <button class="btn-add" onclick="addSlot('${name}', ${slotCount})">+ Slot</button>
-                    <button class="btn-remove" onclick="removeSlot('${name}', ${slotCount})">- Slot</button>
+
+                <div style="display:flex; gap: 5px; margin-top: 10px;">
+                    <button class="btn-add" 
+                            onclick="addSlot('${name}', ${slotCount})" 
+                            style="${isAtMax ? 'background:#ccc; cursor:not-allowed;' : ''}"
+                            ${isAtMax ? 'disabled' : ''}>+</button>
+                    <button class="btn-remove" onclick="removeSlot('${name}', ${slotCount})">-</button>
                 </div>
+                ${isAtMax ? '<div style="color:red; font-size:10px; margin-top:4px;">Max capacity reached (6)</div>' : ''}
             </div>
         `;
 
@@ -124,10 +151,20 @@ function renderAreas(data) {
 
 // Function to add a new slot to a specific area
 window.addSlot = async function (name, currentCount) {
+  // Check if the area has reached the cap
+  if (currentCount >= 6) {
+    alert(`Maximum limit reached! Each area is capped at 6 students.`);
+    return;
+  }
+
   const newCount = currentCount + 1;
-  await update(ref(db, `activities/${name}`), {
-    slotCount: newCount
-  });
+  try {
+    await update(ref(db, `activities/${name}`), {
+      slotCount: newCount
+    });
+  } catch (err) {
+    console.error("Failed to add slot:", err);
+  }
 };
 
 window.claimSlot = async function (areaName, slotId) {
