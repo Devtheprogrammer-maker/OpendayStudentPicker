@@ -19,9 +19,9 @@ const areaNames = [
   "Religion", "Spanish", "Tourism", "Integrated Science", "Biology", "Chemistry",
   "Agri - Tilapia", "Agri - Piggery", "Agri - Vegetable", "Agri - Cattle Ranch",
   "Agri - Layers", "Agri - Broilers", "Agri - Green house", "Agri - Implements",
-  "IT", "Belizean/Social Studies", "General Business", "English", "Literature",
-  "Math", "PE", "Tokens/Helpers", "Tour Guides", "Planning Committee", "Peer Helpers",
-  "Sales (3rd Form)", "Sales (Fourth Form)", "Marching Band/Dance Group"
+  "IT", "Belizean and Social Studies", "General Business", "English", "Literature",
+  "Math", "PE", "Tokens and Helpers", "Tour Guides", "Planning Committee", "Peer Helpers",
+  "Sales (3rd Form)", "Sales (Fourth Form)", "Marching Bandand Dance Group"
 ];
 
 const studentsRef = ref(db, '/');
