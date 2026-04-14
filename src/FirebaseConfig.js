@@ -125,7 +125,8 @@ function renderAreas(data) {
     const slotCount = areaData.slotCount || 1;
     const teacher = areaData.teacherInCharge || "None assigned";
     const classes = areaData.assignedClasses || "None assigned";
-    const isAtMax = slotCount >= 6;
+    const maxLimit = (name === "Tour Guides") ? 14 : 6;
+    const isAtMax = slotCount >= maxLimit;
 
     const card = document.createElement('div');
     card.className = 'area-card';
@@ -150,7 +151,7 @@ function renderAreas(data) {
                             ${isAtMax ? 'disabled' : ''}>+</button>
                     <button class="btn-remove" onclick="removeSlot('${name}', ${slotCount})">-</button>
                 </div>
-                ${isAtMax ? '<div style="color:red; font-size:10px; margin-top:4px;">Max capacity reached (6)</div>' : ''}
+                ${isAtMax ? `<div style="color:red; font-size:10px; margin-top:4px;">Max capacity reached ${maxLimit} </div>` : ''}
             </div>
         `;
 
@@ -175,9 +176,10 @@ function renderAreas(data) {
 
 // Function to add a new slot to a specific area
 window.addSlot = async function (name, currentCount) {
+  const maxLimit = (name === "Tour Guides") ? 14 : 6;
   // Check if the area has reached the cap
-  if (currentCount >= 6) {
-    alert(`Maximum limit reached! Each area is capped at 6 students.`);
+  if (currentCount >= maxLimit) {
+    alert(`Maximum limit reached! ${name} is capped at ${maxLimit} students.`);
     return;
   }
 
